@@ -1,8 +1,0 @@
-name = "mi-sitio"
-compatibility_date = "2024-01-01"
-pages_build_output_dir = "public"
-
-[[d1_databases]]
-binding = "DB"
-database_name = "mi_sitio_db"
-database_id = "48c5349a-43da-47df-ac61-f8bb6dd8656d"
