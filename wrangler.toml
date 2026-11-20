@@ -1,0 +1,8 @@
+name = "mi-sitio"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mi_sitio_db"
+database_id = "REEMPLAZA_CON_TU_DATABASE_ID"

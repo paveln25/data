@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Negocio - Pedido / Contacto</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --accent: #22c55e;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 16px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 440px;
+    width: 100%;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  p.sub { color: var(--muted); margin-top: 0; margin-bottom: 24px; font-size: 0.9rem; }
+  label { display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--muted); }
+  input {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 16px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: var(--text);
+    font-size: 1rem;
+  }
+  .consent {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .consent input { width: auto; margin: 0; }
+  button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #04210f;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .status {
+    margin-top: 14px;
+    font-size: 0.85rem;
+    text-align: center;
+    min-height: 18px;
+  }
+  .status.ok { color: var(--accent); }
+  .status.err { color: #f87171; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Haz tu pedido</h1>
+    <p class="sub">Completa tus datos. Puedes compartir tu ubicación para calcular el tiempo de entrega (opcional).</p>
+
+    <form id="pedidoForm">
+      <label for="nombre">Nombre</label>
+      <input id="nombre" name="nombre" type="text" required placeholder="Tu nombre">
+
+      <label for="telefono">Teléfono</label>
+      <input id="telefono" name="telefono" type="tel" required placeholder="Tu teléfono">
+
+      <label for="detalle">Detalle del pedido</label>
+      <input id="detalle" name="detalle" type="text" required placeholder="¿Qué necesitas?">
+
+      <div class="consent">
+        <input id="compartirUbicacion" type="checkbox">
+        <label for="compartirUbicacion" style="margin:0;">
+          Quiero compartir mi ubicación para calcular la entrega (el navegador te pedirá confirmar)
+        </label>
+      </div>
+
+      <button type="submit" id="btnEnviar">Enviar pedido</button>
+      <div class="status" id="status"></div>
+    </form>
+  </div>
+
+<script>
+const form = document.getElementById('pedidoForm');
+const statusEl = document.getElementById('status');
+const btn = document.getElementById('btnEnviar');
+
+function getUbicacion() {
+  return new Promise((resolve) => {
+    const checkbox = document.getElementById('compartirUbicacion');
+    if (!checkbox.checked || !navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null), // el cliente negó el permiso o falló: seguimos sin ubicación
+      { timeout: 8000 }
+    );
+  });
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  btn.disabled = true;
+  statusEl.textContent = 'Enviando...';
+  statusEl.className = 'status';
+
+  const ubicacion = await getUbicacion();
+
+  const payload = {
+    nombre: document.getElementById('nombre').value,
+    telefono: document.getElementById('telefono').value,
+    detalle: document.getElementById('detalle').value,
+    lat: ubicacion ? ubicacion.lat : null,
+    lng: ubicacion ? ubicacion.lng : null,
+  };
+
+  try {
+    const res = await fetch('/api/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Error del servidor');
+    statusEl.textContent = '¡Pedido enviado! Te contactaremos pronto.';
+    statusEl.className = 'status ok';
+    form.reset();
+  } catch (err) {
+    statusEl.textContent = 'Hubo un error al enviar. Intenta de nuevo.';
+    statusEl.className = 'status err';
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
